@@ -1,0 +1,8 @@
+*.exe
+*.a
+*.dll
+*.def
+*.cmd
+*.bat
+build
+.cache
