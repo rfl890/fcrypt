@@ -41,7 +41,7 @@ set(argon2_sources
 
 if(BUILD_X86_64_V3)
 if(MSVC)
-    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} /ARCH:AVX2")
+    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} /arch:AVX2")
 else()
     set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -march=x86-64-v3")
 endif()
@@ -58,6 +58,10 @@ list(TRANSFORM argon2_sources PREPEND "${CMAKE_SOURCE_DIR}/deps/argon2/")
 add_library(argon2 ${argon2_sources})
 target_include_directories(argon2 PRIVATE "${CMAKE_SOURCE_DIR}/deps/argon2/include")
 
+if(MSVC)
+    add_library(getopt "${CMAKE_SOURCE_DIR}/deps/getopt/getopt.c")
+    target_include_directories(getopt PRIVATE "${CMAKE_SOURCE_DIR}/deps/getopt")
+endif()
 
 ExternalProject_Add(libressl
     PREFIX "${CMAKE_BINARY_DIR}/deps"
@@ -106,4 +110,8 @@ if(WIN32)
     target_link_libraries(fcrypt PRIVATE ws2_32)
     target_link_libraries(fcrypt PRIVATE ntdll)
     target_link_libraries(fcrypt PRIVATE bcrypt)
+endif()
+if(MSVC)
+    target_include_directories(fcrypt PRIVATE "${CMAKE_SOURCE_DIR}/deps/getopt")
+    target_link_libraries(fcrypt PRIVATE getopt)
 endif()
