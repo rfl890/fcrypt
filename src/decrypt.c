@@ -43,13 +43,13 @@ bool decrypt(FILE *input, FILE *output, char *password) {
         goto error;
     }
 
-    printf("%s\n", "deriving key...");
+    fprintf(stderr, "%s\n", "deriving key...");
     if (!derive_key_from_password(password, strlen(password), salt, NULL,
                                   derived_key)) {
         fprintf(stderr, "error deriving key\n");
         goto error;
     }
-    printf("%s\n", "finished deriving key");
+    fprintf(stderr, "%s\n", "finished deriving key");
 
     if ((ctx = EVP_CIPHER_CTX_new()) == NULL) {
         fprintf(stderr, "EVP_CIPHER_CTX_new error\n");
@@ -110,7 +110,7 @@ bool decrypt(FILE *input, FILE *output, char *password) {
     }
 
     if (EVP_DecryptFinal_ex(ctx, output_buffer, &outl) <= 0) {
-        printf("!!! failed to validate tag !!!\nyour encrypted file has been "
+        fprintf(stderr, "!!! failed to validate tag !!!\nyour encrypted file has been "
                "corrupted and/or tampered with by a 3rd-party.\nalternatively, "
                "you may have just typed the wrong password.\n");
         goto error;

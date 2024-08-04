@@ -62,7 +62,7 @@ target_include_directories(argon2 PRIVATE "${CMAKE_SOURCE_DIR}/deps/argon2/inclu
 ExternalProject_Add(libressl
     PREFIX "${CMAKE_BINARY_DIR}/deps"
     URL "https://github.com/libressl/portable/releases/download/v3.9.2/libressl-3.9.2.tar.gz"
-    PATCH_COMMAND patch -p1 CMakeLists.txt ${CMAKE_CURRENT_SOURCE_DIR}/patches/libressl-fix-mingw-asm.patch
+    PATCH_COMMAND patch -p1 CMakeLists.txt ${CMAKE_SOURCE_DIR}/patches/libressl-fix-mingw-asm.patch
     BUILD_COMMAND ${CMAKE_MAKE_PROGRAM} crypto
     INSTALL_COMMAND ""
     CMAKE_ARGS
@@ -83,11 +83,14 @@ set(fcrypt_sources
     encrypt.c
     decrypt.c
     key-derivation.c
+    parse-args.c
 )
 list(TRANSFORM fcrypt_sources PREPEND "${CMAKE_SOURCE_DIR}/src/")
 
 add_executable(fcrypt ${fcrypt_sources})
 add_dependencies(fcrypt libressl)
+
+target_compile_definitions(fcrypt PRIVATE CMAKE_COMPILING=1)
 
 target_include_directories(fcrypt PRIVATE "${CMAKE_SOURCE_DIR}/deps/argon2/include")
 target_include_directories(fcrypt PRIVATE "${CMAKE_BINARY_DIR}/deps/src/libressl-build/include")

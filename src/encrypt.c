@@ -28,15 +28,15 @@ bool encrypt(FILE *input, FILE *output, char *password, bool use_chacha) {
     }
 
     if (use_chacha) {
-        printf("%s\n", "using ChaCha20-Poly1305");
+        fprintf(stderr, "%s\n", "using ChaCha20-Poly1305");
     }
-    printf("%s\n", "deriving key...");
+    fprintf(stderr, "%s\n", "deriving key...");
     if (!derive_key_from_password(password, strlen(password), NULL, salt,
                                  derived_key)) {
         fprintf(stderr, "error deriving key\n");
         goto error;
     }
-    printf("%s\n", "finished deriving key");
+    fprintf(stderr, "%s\n", "finished deriving key");
 
     if ((ctx = EVP_CIPHER_CTX_new()) == NULL) {
         fprintf(stderr, "EVP_CIPHER_CTX_new error\n");
@@ -55,11 +55,11 @@ bool encrypt(FILE *input, FILE *output, char *password, bool use_chacha) {
 
     while (1) {
         size_t bytes_read = fread(input_buffer, 1, BUFFER_SIZE, input);
-        bool to_break = false;
+        bool should_break = false;
 
         if (bytes_read < BUFFER_SIZE) {
             if (feof(input) && !ferror(input)) {
-                to_break = true;
+                should_break = true;
             } else {
                 fprintf(stderr, "error reading input file: %s\n",
                         strerror(errno));
@@ -81,7 +81,7 @@ bool encrypt(FILE *input, FILE *output, char *password, bool use_chacha) {
             goto error;
         }
 
-        if (to_break) {
+        if (should_break) {
             break;
         };
     }
