@@ -8,12 +8,14 @@ $ mkdir build
 $ cd build
 $ cmake -DCMAKE_BUILD_TYPE=Release -DCMAKE_INTERPROCEDURAL_OPTIMIZATION=on -G Ninja ..
 $ ninja
-$ ./fcrypt -version
+$ ./fcrypt --version
 ```
 
 The `patch` command is needed to build on Windows.
 
-It's highly recommended to use ThinLTO (`DCMAKE_INTERPROCEDURAL_OPTIMIZATION=on`) during the build as this greatly reduces the executable size.
+It's highly recommended to use ThinLTO (`DCMAKE_INTERPROCEDURAL_OPTIMIZATION=on`) during the build as this greatly reduces the executable size. 
+
+Clang 19.1.0 (Windows) and GCC 11.3.0 (Linux) produce executables sized 240K and 145K respectively, versus several megabytes without. MSVC also reduces code size although to a lesser extent (1M).
 
 There are a couple variables used during the build, listed here:
 
