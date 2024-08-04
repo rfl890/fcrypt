@@ -2,10 +2,11 @@
 #ifdef CMAKE_COMPILING
 #include <cmake-generated.h>
 #endif
-#include <getopt.h>
 #include <errno.h>
+#include <getopt.h>
 #include <stdbool.h>
 #include <stdlib.h>
+
 
 #include "parse-args.h"
 
@@ -44,7 +45,8 @@ static struct option options[] = {{"use-chacha20", optional_argument, NULL,
                                   {"version", optional_argument, NULL, 'v'},
                                   {"password", required_argument, NULL, 'p'},
                                   {"input", required_argument, NULL, 'i'},
-                                  {"output", required_argument, NULL, 'o'}};
+                                  {"output", required_argument, NULL, 'o'},
+                                  {NULL, 0, NULL, 0}};
 
 struct fcrypt_args parse_args(int argc, const char **argv) {
     int opt;
@@ -70,6 +72,7 @@ struct fcrypt_args parse_args(int argc, const char **argv) {
         switch (opt) {
         case 'p':
             args.password = optarg;
+            printf("%s", optarg);
             break;
         case 'i':
             input_filename = optarg;
