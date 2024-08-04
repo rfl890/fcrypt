@@ -3,6 +3,7 @@
 #include <cmake-generated.h>
 #endif
 #include <getopt.h>
+#include <errno.h>
 #include <stdbool.h>
 #include <stdlib.h>
 
