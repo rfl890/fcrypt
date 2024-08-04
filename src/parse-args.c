@@ -7,7 +7,6 @@
 #include <stdbool.h>
 #include <stdlib.h>
 
-
 #include "parse-args.h"
 
 struct fcrypt_flags {
