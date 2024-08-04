@@ -53,6 +53,8 @@ bool encrypt(FILE *input, FILE *output, char *password, bool use_chacha) {
         goto error;
     }
 
+    fwrite(use_chacha ? FORMAT_V1_MAGIC_CHACHA : FORMAT_V1_MAGIC, 1, 8, output);
+
     while (1) {
         size_t bytes_read = fread(input_buffer, 1, BUFFER_SIZE, input);
         bool should_break = false;
@@ -104,7 +106,6 @@ bool encrypt(FILE *input, FILE *output, char *password, bool use_chacha) {
     fwrite(output_buffer, 1, 16, output);
     fwrite(salt, 1, 32, output);
     fwrite(iv, 1, 12, output);
-    fwrite(use_chacha ? FORMAT_V1_MAGIC_CHACHA : FORMAT_V1_MAGIC, 1, 8, output);
     if (ferror(output)) {
         fprintf(stderr, "error writing output file: %s\n", strerror(errno));
         goto error;

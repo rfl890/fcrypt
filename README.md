@@ -40,7 +40,7 @@ fcrypt uses AES-256-GCM or ChaCha20-Poly1305 for the encryption itself, and argo
    
 The file starts with the full chunk of encrypted data (from the original file). Then, the following data is appended in this order. 
 
+- File format magic (8 bytes)
 - AEAD authentication tag (16 bytes)
 - Argon2 Salt (32 bytes)
 - AEAD IV (12 bytes)
-- File format magic (8 bytes)

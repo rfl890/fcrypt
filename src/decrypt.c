@@ -25,16 +25,16 @@ bool decrypt(FILE *input, FILE *output, char *password) {
 
     bool use_chacha20 = false;
 
-    fseek(input, -68, SEEK_END);
+    fread(magic, 1, 8, input);
+    fseek(input, -60, SEEK_END);
     fread(tag, 1, 16, input);
     fread(salt, 1, 32, input);
     fread(iv, 1, 12, input);
-    fread(magic, 1, 8, input);
     if (ferror(output)) {
         fprintf(stderr, "error reading input file: %s\n", strerror(errno));
         goto error;
     }
-    fseek(input, 0, SEEK_SET);
+    fseek(input, 8, SEEK_SET);
 
     if (memcmp(magic, FORMAT_V1_MAGIC_CHACHA, 8) == 0) {
         use_chacha20 = true;
@@ -89,7 +89,7 @@ bool decrypt(FILE *input, FILE *output, char *password) {
         }
 
         if (EVP_DecryptUpdate(ctx, output_buffer, &outl, input_buffer,
-                              to_break ? ((int)bytes_read) - 68
+                              to_break ? ((int)bytes_read) - 60
                                        : (int)bytes_read) /* bytes_read <=
                            MAX_BUFFER < INT_MAX*/
             != 1) {
@@ -97,7 +97,7 @@ bool decrypt(FILE *input, FILE *output, char *password) {
             goto error;
         }
 
-        fwrite(output_buffer, 1, to_break ? bytes_read - 68 : bytes_read,
+        fwrite(output_buffer, 1, to_break ? bytes_read - 60 : bytes_read,
                output);
         if (ferror(output)) {
             fprintf(stderr, "error writing output file: %s\n", strerror(errno));
