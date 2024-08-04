@@ -71,7 +71,6 @@ struct fcrypt_args parse_args(int argc, const char **argv) {
         switch (opt) {
         case 'p':
             args.password = optarg;
-            printf("%s", optarg);
             break;
         case 'i':
             input_filename = optarg;
