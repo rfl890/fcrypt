@@ -48,8 +48,8 @@ The file starts with the full chunk of encrypted data (from the original file). 
 - AEAD IV (12 bytes)
 
 # Future plans
+- Rewrite in Rust
 - Add standalone key-generation (generate and wrap key with a password)
 - Add more features, like signing/verifying and hashing
 - Add public-key encryption support
 - Allow multiple keys to decrypt a file
-- Rewrite in Rust (jk) (actually maybe not)
