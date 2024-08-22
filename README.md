@@ -31,7 +31,7 @@ $ fcrypt -p "my very secure password" -i somefile.txt -o somefile.txt.enc
 
 ## Decrypting a file
 ```sh
-fcrypt -d -p "my very secure password" -i somefile.txt.enc -o somefile.txt.dec
+fcrypt -dp "my very secure password" -i somefile.txt.enc -o somefile.txt.dec
 ```
 
 # Details   
@@ -43,11 +43,11 @@ The file starts with the full chunk of encrypted data (from the original file). 
 - File format magic (8 bytes)
 - AEAD authentication tag (16 bytes)
 - Argon2 Salt (32 bytes)
-- AEAD IV (12 bytes)
+- AEAD IV (8 bytes)
 
 # Future plans
-- Rewrite in Rust
 - Add standalone key-generation (generate and wrap key with a password)
 - Add more features, like signing/verifying and hashing
 - Add public-key encryption support
 - Allow multiple keys to decrypt a file
+- Rewrite in Rust
