@@ -14,7 +14,7 @@ bool decrypt(FILE *input, FILE *output, char *password) {
 
     uint8_t derived_key[32];
     uint8_t salt[32];
-    uint8_t iv[12];
+    uint8_t iv[8];
     uint8_t tag[16];
     uint8_t magic[8];
 
@@ -26,10 +26,10 @@ bool decrypt(FILE *input, FILE *output, char *password) {
     bool use_chacha20 = false;
 
     fread(magic, 1, 8, input);
-    fseek(input, -60, SEEK_END);
+    fseek(input, -56, SEEK_END);
     fread(tag, 1, 16, input);
     fread(salt, 1, 32, input);
-    fread(iv, 1, 12, input);
+    fread(iv, 1, 8, input);
     if (ferror(output)) {
         fprintf(stderr, "error reading input file: %s\n", strerror(errno));
         goto error;
@@ -64,6 +64,11 @@ bool decrypt(FILE *input, FILE *output, char *password) {
         goto error;
     }
 
+    if (EVP_CIPHER_CTX_ctrl(ctx, EVP_CTRL_AEAD_SET_IVLEN, 8, NULL) != 1) {
+        fprintf(stderr, "EVP_CIPHER_CTX_ctrl (1) error\n");
+        goto error;
+    }
+
     if (EVP_CIPHER_CTX_ctrl(ctx, EVP_CTRL_AEAD_SET_TAG, 16, tag) != 1) {
         fprintf(stderr, "EVP_CIPHER_CTX_ctrl error\n");
         goto error;
@@ -89,7 +94,7 @@ bool decrypt(FILE *input, FILE *output, char *password) {
         }
 
         if (EVP_DecryptUpdate(ctx, output_buffer, &outl, input_buffer,
-                              to_break ? ((int)bytes_read) - 60
+                              to_break ? ((int)bytes_read) - 56
                                        : (int)bytes_read) /* bytes_read <=
                            MAX_BUFFER < INT_MAX*/
             != 1) {
@@ -97,7 +102,7 @@ bool decrypt(FILE *input, FILE *output, char *password) {
             goto error;
         }
 
-        fwrite(output_buffer, 1, to_break ? bytes_read - 60 : bytes_read,
+        fwrite(output_buffer, 1, to_break ? bytes_read - 56 : bytes_read,
                output);
         if (ferror(output)) {
             fprintf(stderr, "error writing output file: %s\n", strerror(errno));

@@ -15,14 +15,14 @@ bool encrypt(FILE *input, FILE *output, char *password, bool use_chacha) {
 
     uint8_t derived_key[32];
     uint8_t salt[32];
-    uint8_t iv[12];
+    uint8_t iv[8];
 
     uint8_t input_buffer[BUFFER_SIZE];
     uint8_t output_buffer[BUFFER_SIZE];
 
     int outl;
 
-    if (RAND_bytes(iv, 12) != 1) {
+    if (RAND_bytes(iv, 8) != 1) {
         fprintf(stderr, "error filling random bytes for IV\n");
         return false;
     }
@@ -45,6 +45,11 @@ bool encrypt(FILE *input, FILE *output, char *password, bool use_chacha) {
 
     if (EVP_EncryptInit_ex(ctx, use_chacha ? EVP_chacha20_poly1305() : EVP_aes_256_gcm(), NULL, NULL, NULL) != 1) {
         fprintf(stderr, "EVP_EncryptInit_ex (1) error\n");
+        goto error;
+    }
+
+    if (EVP_CIPHER_CTX_ctrl(ctx, EVP_CTRL_AEAD_SET_IVLEN, 8, NULL) != 1) {
+        fprintf(stderr, "EVP_CIPHER_CTX_ctrl (1) error\n");
         goto error;
     }
 
@@ -96,7 +101,7 @@ bool encrypt(FILE *input, FILE *output, char *password, bool use_chacha) {
 
     if (EVP_CIPHER_CTX_ctrl(ctx, EVP_CTRL_AEAD_GET_TAG, 16, output_buffer) !=
         1) {
-        fprintf(stderr, "%s\n", "EVP_CIPHER_CTX_ctrl error");
+        fprintf(stderr, "%s\n", "EVP_CIPHER_CTX_ctrl (2) error");
         goto error;
     }
 
@@ -105,12 +110,12 @@ bool encrypt(FILE *input, FILE *output, char *password, bool use_chacha) {
     fseek(output, 0, SEEK_END);
     fwrite(output_buffer, 1, 16, output);
     fwrite(salt, 1, 32, output);
-    fwrite(iv, 1, 12, output);
+    fwrite(iv, 1, 8, output);
     if (ferror(output)) {
         fprintf(stderr, "error writing output file: %s\n", strerror(errno));
         goto error;
     }
-
+    
     OPENSSL_cleanse(derived_key, 32);
     OPENSSL_cleanse(input_buffer, 32);
     OPENSSL_cleanse(output_buffer, 32);
