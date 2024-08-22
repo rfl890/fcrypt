@@ -11,7 +11,7 @@ $ ninja
 $ ./fcrypt --version
 ```
 
-The `patch` command is needed to build on Windows.
+Currently, the `patch` command is needed to build. You won't need it when libressl updates to `v3.9.3`.
 
 It's highly recommended to use ThinLTO (`DCMAKE_INTERPROCEDURAL_OPTIMIZATION=on`) during the build as this greatly reduces the executable size. 
 
