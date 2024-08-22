@@ -16,7 +16,7 @@ struct fcrypt_flags {
     bool flg_version;
 };
 
-const char *version_string = "fcrypt 0.1\n"
+const char *version_string = "fcrypt 1.0\n"
                              "git %s\n"
                              "compiler: %s %s\n"
                              "avx2 optimizations: %s\n";
