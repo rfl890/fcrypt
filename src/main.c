@@ -12,7 +12,7 @@ int main(int argc, const char **argv) {
     switch (args.operation) {
     case FCRYPT_ENCRYPT: {
         bool result = encrypt(args.input_file, args.output_file, args.password,
-                              args.use_chacha20);
+                              args.algorithm);
         fclose(args.input_file);
         fclose(args.output_file);
         if (!result) {

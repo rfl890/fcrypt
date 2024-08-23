@@ -55,7 +55,7 @@ struct fcrypt_args parse_args(int argc, const char **argv) {
                                .output_file = NULL,
 
                                .operation = FCRYPT_ENCRYPT,
-                               .use_chacha20 = false};
+                               .algorithm = ALGORITHM_AES};
     struct fcrypt_flags flags = {.flg_chacha20 = false,
                                  .flg_decrypt = false,
                                  .flg_help = false,
@@ -143,7 +143,7 @@ struct fcrypt_args parse_args(int argc, const char **argv) {
 
     // Check optional args
     if (flags.flg_chacha20) {
-        args.use_chacha20 = true;
+        args.algorithm = ALGORITHM_CHACHA20;
     }
     if (flags.flg_decrypt) {
         args.operation = FCRYPT_DECRYPT;

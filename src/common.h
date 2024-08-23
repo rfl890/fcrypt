@@ -5,4 +5,6 @@
 #define FORMAT_V1_MAGIC "\xec\xff\x69\x00\x72\xb8\x9c\x69"
 #define FORMAT_V1_MAGIC_CHACHA "\xec\xff\x69\x00\x72\x27\x33\x7f"
 
+#define eprintf(...) fprintf(stderr, __VA_ARGS__)
+
 #endif

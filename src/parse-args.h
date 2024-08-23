@@ -4,6 +4,8 @@
 #include <stdio.h>
 #include <stdbool.h>
 
+#include "crypto.h"
+
 enum fcrypt_operation {
     FCRYPT_ENCRYPT,
     FCRYPT_DECRYPT
@@ -16,7 +18,7 @@ struct fcrypt_args {
     char *password;
 
     enum fcrypt_operation operation;
-    bool use_chacha20;
+    enum cipher_algorithm algorithm;
 };
 
 struct fcrypt_args parse_args(int argc, const char **argv);
