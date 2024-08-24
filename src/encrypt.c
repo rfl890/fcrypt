@@ -20,6 +20,9 @@ bool encrypt(FILE *input, FILE *output, char *password,
     case ALGORITHM_CHACHA20:
         magic = FORMAT_V1_MAGIC_CHACHA;
         break;
+    default:
+        magic = FORMAT_V1_MAGIC;
+        break;
     }
 
     fwrite(magic, 1, 8, output);
