@@ -161,11 +161,13 @@ if(MSVC)
 endif()
 
 add_executable(lua "${CMAKE_SOURCE_DIR}/deps/minilua/lua.c")
+if(NOT WIN32)
+    target_link_libraries(lua PRIVATE m)
+endif()
 
 configure_file("${CMAKE_SOURCE_DIR}/tests/util.lua" "${CMAKE_BINARY_DIR}/util.lua" COPYONLY)
 
 add_test(NAME ZeroLength COMMAND lua "${CMAKE_SOURCE_DIR}/tests/zero.lua" "${CMAKE_BINARY_DIR}/fcrypt${CMAKE_EXECUTABLE_SUFFIX}")
 add_test(NAME BlockSizeAlign COMMAND lua "${CMAKE_SOURCE_DIR}/tests/block_size_align.lua" "${CMAKE_BINARY_DIR}/fcrypt${CMAKE_EXECUTABLE_SUFFIX}")
-
 
 install(TARGETS fcrypt DESTINATION bin)
