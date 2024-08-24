@@ -60,6 +60,9 @@ bool encrypt_init(encrypt_state_t *state, const char *password,
     case ALGORITHM_CHACHA20:
         cipher = EVP_chacha20();
         break;
+    default:
+        cipher = EVP_aes_256_ctr();
+        break;
     }
 
     if ((state->ctx = EVP_CIPHER_CTX_new()) == NULL) {

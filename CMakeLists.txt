@@ -7,7 +7,7 @@ include(CTest)
 option(USE_SANITIZERS "Enables the use of ASan and UBSan." OFF)
 option(BUILD_X86_64_V3 "Enables x86-64-v3 optimizations for Argon2." OFF)
 
-set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wall")
+set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wall -Wextra")
 
 if(USE_SANITIZERS)
     set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -fsanitize=address,undefined")
