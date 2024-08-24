@@ -19,7 +19,7 @@ bool decrypt(FILE *input, FILE *output, char *password) {
     fread(salt, 1, 32, input);
     fread(tag, 1, 32, input);
     if (ferror(output)) {
-        fprintf(stderr, "error reading input file: %s\n", strerror(errno));
+        eprintf("error reading input file: %s\n", strerror(errno));
         goto error;
     }
     fseek(input, 8, SEEK_SET);
@@ -29,7 +29,7 @@ bool decrypt(FILE *input, FILE *output, char *password) {
     if (memcmp(magic, FORMAT_V1_MAGIC_CHACHA, 8) == 0) {
         algorithm = ALGORITHM_CHACHA20;
     } else if (memcmp(magic, FORMAT_V1_MAGIC, 8) != 0) {
-        fprintf(stderr, "invalid magic\n");
+        eprintf("invalid magic\n");
         goto error;
     }
 
@@ -58,14 +58,14 @@ bool decrypt(FILE *input, FILE *output, char *password) {
                             should_break ? ((int)bytes_read) - 64
                                          : (int)bytes_read,
                             output_buffer)) {
-            fprintf(stderr, "%s\n", "EVP_DecryptUpdate error");
+            eprintf("%s\n", "EVP_DecryptUpdate error");
             goto error;
         }
 
         fwrite(output_buffer, 1, should_break ? bytes_read - 64 : bytes_read,
                output);
         if (ferror(output)) {
-            fprintf(stderr, "error writing output file: %s\n", strerror(errno));
+            eprintf("error writing output file: %s\n", strerror(errno));
             goto error;
         }
 
@@ -73,9 +73,8 @@ bool decrypt(FILE *input, FILE *output, char *password) {
             break;
     }
 
-    if (!decrypt_finalize(&state, output)) {
-        fprintf(stderr,
-                "!!! failed to validate tag !!!\nyour encrypted file has been "
+    if (!decrypt_finalize(&state)) {
+        eprintf("!!! failed to validate tag !!!\nyour encrypted file has been "
                 "corrupted and/or tampered with by a "
                 "3rd-party.\nalternatively, "
                 "you may have just typed the wrong password.\n");

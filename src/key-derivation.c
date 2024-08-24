@@ -5,14 +5,7 @@
 
 #include <argon2.h>
 
-#include <openssl/conf.h>
-#include <openssl/err.h>
-#include <openssl/evp.h>
-#include <openssl/kdf.h>
 #include <openssl/rand.h>
-
-#include "common.h"
-
 
 // exceeding
 // https://cheatsheetseries.owasp.org/cheatsheets/Password_Storage_Cheat_Sheet.html#argon2id

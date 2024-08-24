@@ -7,6 +7,7 @@
 #include <stdbool.h>
 #include <stdlib.h>
 
+#include "common.h"
 #include "parse-args.h"
 
 struct fcrypt_flags {
@@ -16,7 +17,7 @@ struct fcrypt_flags {
     bool flg_version;
 };
 
-const char *version_string = "fcrypt 1.0\n"
+const char *version_string = "fcrypt 1.1\n"
                              "git %s\n"
                              "compiler: %s %s\n"
                              "avx2 optimizations: %s\n";
@@ -101,18 +102,18 @@ struct fcrypt_args parse_args(int argc, const char **argv) {
 
     // Handle help/version information
     if (flags.flg_help && flags.flg_version) {
-        fprintf(stderr, "%s\n",
+        eprintf("%s\n",
                 "error: flags '--help' and '--version' are mutually "
                 "exclusive\n");
         exit(EXIT_FAILURE);
     }
 
     if (flags.flg_help) {
-        fprintf(stderr, "%s%s", usage_string, help_string);
+        eprintf("%s%s", usage_string, help_string);
         exit(EXIT_SUCCESS);
     } else if (flags.flg_version) {
 #ifdef CMAKE_COMPILING
-        fprintf(stderr, version_string, GIT_COMMIT_HASH, COMPILER_STR,
+        eprintf(version_string, GIT_COMMIT_HASH, COMPILER_STR,
                 COMPILER_VERSION_STR, BUILD_X86_64_V3 ? "yes" : "no");
         exit(EXIT_SUCCESS);
 #endif
@@ -120,24 +121,24 @@ struct fcrypt_args parse_args(int argc, const char **argv) {
 
     // Check required args
     if (args.password == NULL) {
-        fprintf(stderr, "missing required argument --password\n"
+        eprintf("missing required argument --password\n"
                         "try running with --help for more info\n");
         exit(EXIT_FAILURE);
     }
     if (input_filename == NULL) {
-        fprintf(stderr, "missing required argument --input\n"
+        eprintf("missing required argument --input\n"
                         "try running with --help for more info\n");
         exit(EXIT_FAILURE);
     }
     if (output_filename == NULL) {
-        fprintf(stderr, "missing required argument --output\n"
+        eprintf("missing required argument --output\n"
                         "try running with --help for more info\n");
         exit(EXIT_FAILURE);
     }
 
     if (error) {
-        fprintf(stderr, "%s", usage_string);
-        fprintf(stderr, "%s\n", "try running with --help for more info\n");
+        eprintf("%s", usage_string);
+        eprintf("%s\n", "try running with --help for more info\n");
         exit(EXIT_FAILURE);
     }
 
@@ -160,7 +161,7 @@ struct fcrypt_args parse_args(int argc, const char **argv) {
     if (args.input_file == NULL) {
         FILE *input_file = fopen(input_filename, "rb");
         if (input_file == NULL) {
-            fprintf(stderr, "error opening input file %s: %s\n", input_filename,
+            eprintf("error opening input file %s: %s\n", input_filename,
                     strerror(errno));
             exit(EXIT_FAILURE);
         }
@@ -169,7 +170,7 @@ struct fcrypt_args parse_args(int argc, const char **argv) {
     if (args.output_file == NULL) {
         FILE *output_file = fopen(output_filename, "wb");
         if (output_file == NULL) {
-            fprintf(stderr, "error opening output file %s: %s\n",
+            eprintf("error opening output file %s: %s\n",
                     output_filename, strerror(errno));
             exit(EXIT_FAILURE);
         }

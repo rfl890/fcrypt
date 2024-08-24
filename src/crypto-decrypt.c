@@ -14,8 +14,8 @@
 #include "crypto.h"
 #include "key-derivation.h"
 
-static const char *context_encryption = "fcrypt v1.0 [encryption key]";
-static const char *context_hmac = "fcrypt v1.0 [hmac key]";
+static const char *context_encryption = "fcrypt v1.1 [encryption key]";
+static const char *context_hmac = "fcrypt v1.1 [hmac key]";
 
 void decrypt_free(decrypt_state_t *state) {
     if (state->ctx != NULL) {
@@ -104,9 +104,11 @@ error:
     return false;
 }
 
-bool decrypt_finalize(decrypt_state_t *state, void *output) {
+bool decrypt_finalize(decrypt_state_t *state) {
     int outl;
-    EVP_DecryptFinal(state->ctx, output, &outl);
+    // nothing will happen to this buffer
+    uint8_t buffer[1];
+    EVP_DecryptFinal(state->ctx, buffer, &outl);
 
     uint8_t computed_tag[32];
     blake3_hasher_finalize(&state->hasher, computed_tag, 32);

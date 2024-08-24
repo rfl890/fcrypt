@@ -2,6 +2,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+#include "common.h"
 #include "decrypt.h"
 #include "encrypt.h"
 #include "parse-args.h"
@@ -16,12 +17,11 @@ int main(int argc, const char **argv) {
         fclose(args.input_file);
         fclose(args.output_file);
         if (!result) {
-            fprintf(stderr,
-                    "errors occured, file encryption incomplete!\nthe output "
+            eprintf("errors occured, file encryption incomplete!\nthe output "
                     "file is in a corrupt state and should be deleted\n");
             return EXIT_FAILURE;
         } else {
-            fprintf(stderr, "file encryption successfully completed\n");
+            eprintf("file encryption successfully completed\n");
         }
         break;
     }
@@ -30,9 +30,9 @@ int main(int argc, const char **argv) {
         fclose(args.input_file);
         fclose(args.output_file);
         if (result) {
-            fprintf(stderr, "file decryption completed successfully\n");
+            eprintf("file decryption completed successfully\n");
         } else {
-            fprintf(stderr, "file decryption failed\n");
+            eprintf("file decryption failed\n");
             return EXIT_FAILURE;
         }
         break;

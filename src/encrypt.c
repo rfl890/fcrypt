@@ -2,12 +2,10 @@
 #include <stdio.h>
 #include <string.h>
 
-
 #include <openssl/conf.h>
 #include <openssl/err.h>
 #include <openssl/evp.h>
 #include <openssl/rand.h>
-
 
 #include "common.h"
 #include "crypto.h"
@@ -46,8 +44,7 @@ bool encrypt(FILE *input, FILE *output, char *password,
             if (feof(input) && !ferror(input)) {
                 should_break = true;
             } else {
-                eprintf("error reading input file: %s\n",
-                        strerror(errno));
+                eprintf("error reading input file: %s\n", strerror(errno));
                 goto error;
             }
         }
@@ -59,7 +56,7 @@ bool encrypt(FILE *input, FILE *output, char *password,
 
         fwrite(output_buffer, 1, bytes_read, output);
         if (ferror(output)) {
-            fprintf(stderr, "error writing output file: %s\n", strerror(errno));
+            eprintf("error writing output file: %s\n", strerror(errno));
             goto error;
         }
 
@@ -69,7 +66,7 @@ bool encrypt(FILE *input, FILE *output, char *password,
 
     uint8_t tag[32];
     uint8_t salt[32];
-    encrypt_finalize(&state, output_buffer, tag, salt);
+    encrypt_finalize(&state, tag, salt);
     encrypt_free(&state);
 
     fseek(output, 0, SEEK_END);
