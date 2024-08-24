@@ -23,6 +23,13 @@ There are a couple variables used during the build, listed here:
 | `BUILD_X86_64_V3` | `off`   | Enables x86-64-v3 optimizations for Argon2. |
 
 
+# Testing
+Tests are written in Lua. It's built automatically with the project.
+To run tests:
+```sh
+$ ctest
+```
+
 # Usage
 ## Encrypting a file
 ```sh
@@ -31,7 +38,7 @@ $ fcrypt -p "my very secure password" -i somefile.txt -o somefile.txt.enc
 
 ## Decrypting a file
 ```sh
-fcrypt -dp "my very secure password" -i somefile.txt.enc -o somefile.txt.dec
+$ fcrypt -dp "my very secure password" -i somefile.txt.enc -o somefile.txt.dec
 ```
 
 # Details   
