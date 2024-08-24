@@ -44,13 +44,9 @@ $ fcrypt -dp "my very secure password" -i somefile.txt.enc -o somefile.txt.dec
 # Details   
 
 fcrypt uses AES-256-GCM or ChaCha20-Poly1305 for the encryption itself, and argon2 for key derivation. The format is (informally) described below.   
-   
-The file starts with the full chunk of encrypted data (from the original file). Then, the following data is appended in this order. 
 
-- File format magic (8 bytes)
-- AEAD authentication tag (16 bytes)
-- Argon2 Salt (32 bytes)
-- AEAD IV (8 bytes)
+First, an 8-byte magic header is written to the file. Then, the encrypted file data. Finally, 
+the Argon2 salt (32 bytes) and Blake3 MAC (32 bytes) is written to the end of the file.
 
 # Future plans
 - Add standalone key-generation (generate and wrap key with a password)
