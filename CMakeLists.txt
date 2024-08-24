@@ -162,6 +162,10 @@ endif()
 
 add_executable(lua "${CMAKE_SOURCE_DIR}/deps/minilua/lua.c")
 
-add_test(NAME Test COMMAND lua "${CMAKE_SOURCE_DIR}/tests/encrypt.lua" "${CMAKE_BINARY_DIR}/fcrypt.exe")
+configure_file("${CMAKE_SOURCE_DIR}/tests/util.lua" "${CMAKE_BINARY_DIR}/util.lua" COPYONLY)
+
+add_test(NAME ZeroLength COMMAND lua "${CMAKE_SOURCE_DIR}/tests/zero.lua" "${CMAKE_BINARY_DIR}/fcrypt.exe")
+add_test(NAME BlockSizeAlign COMMAND lua "${CMAKE_SOURCE_DIR}/tests/block_size_align.lua" "${CMAKE_BINARY_DIR}/fcrypt.exe")
+
 
 install(TARGETS fcrypt DESTINATION bin)
