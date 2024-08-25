@@ -71,6 +71,7 @@ bool decrypt_init(decrypt_state_t *state, const char *password, uint8_t *salt,
         eprintf("EVP_CIPHER_CTX_new error\n");
         goto error;
     }
+    
     if (EVP_EncryptInit_ex(state->ctx, cipher, NULL, state->derived_key,
                            counter) != 1) {
         eprintf("EVP_EncryptInit_ex error\n");
