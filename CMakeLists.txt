@@ -29,8 +29,13 @@ if(GIT_FOUND)
         WORKING_DIRECTORY "${CMAKE_SOURCE_DIR}"
         OUTPUT_STRIP_TRAILING_WHITESPACE
         OUTPUT_VARIABLE GIT_COMMIT_HASH
+    	ERROR_VARIABLE GIT_FAILED
     )
 else()
+    set(GIT_COMMIT_HASH "(unavailable)")
+endif()
+
+if(DEFINED GIT_FAILED)
     set(GIT_COMMIT_HASH "(unavailable)")
 endif()
 
