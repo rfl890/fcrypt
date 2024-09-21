@@ -1,28 +1,10 @@
 cmake_minimum_required(VERSION 3.14)
 project(fcrypt VERSION 1.1 LANGUAGES C)
-include(ExternalProject)
+include(FetchContent)
 include(FindGit)
 include(CTest)
 
-option(USE_SANITIZERS "Enables the use of ASan and UBSan." OFF)
-option(BUILD_X86_64_V3 "Enables x86-64-v3 optimizations for Argon2." OFF)
-
-set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wall -Wextra")
-
-if(USE_SANITIZERS)
-    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -fsanitize=address,undefined")
-endif()
-
-if(MSVC)
-    set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} /STACK:4194304")
-elseif(MINGW AND ("${CMAKE_C_COMPILER_ID}" MATCHES "Clang"))
-    set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -Wl,--stack,4194304")
-else()
-    set(CMAKE_EXE_LINKER_FLAGS
-        "${CMAKE_EXE_LINKER_FLAGS} -Wl,-z,stack-size=4194304"
-    )
-endif()
-
+# Get commit hash
 if(GIT_FOUND)
     execute_process(
         COMMAND ${GIT_EXECUTABLE} rev-parse HEAD
@@ -32,14 +14,33 @@ if(GIT_FOUND)
     	ERROR_VARIABLE GIT_FAILED
     )
 else()
-    set(GIT_COMMIT_HASH "(unavailable)")
+    set(GIT_COMMIT_HASH "n/a")
 endif()
 
-if(DEFINED GIT_FAILED)
-    set(GIT_COMMIT_HASH "(unavailable)")
-endif()
+# LibreSSL
+set(LIBRESSL_TESTS off)
+set(LIBRESSL_APPS off)
+FetchContent_Declare(
+    libressl
+    URL
+        # "https://github.com/libressl/portable/releases/download/v3.9.2/libressl-3.9.2.tar.gz"
+        "http://localhost:8080/libressl-3.9.2.tar.gz"
+        PATCH_COMMAND
+        patch -p1 -i ${CMAKE_SOURCE_DIR}/patches/libressl-fix-mingw-asm.patch
+    DOWNLOAD_EXTRACT_TIMESTAMP true
+)
+FetchContent_MakeAvailable(libressl)
 
-set(argon2_sources
+# Blake3
+FetchContent_Declare(
+    blake3
+    SOURCE_DIR "${CMAKE_SOURCE_DIR}/dependencies/blake3/"
+    DOWNLOAD_EXTRACT_TIMESTAMP true
+)
+FetchContent_MakeAvailable(blake3)
+
+# Argon2
+set(argon2_src
     argon2.c
     core.c
     encoding.c
@@ -47,71 +48,38 @@ set(argon2_sources
     blake2/blake2b.c
 )
 
-if(BUILD_X86_64_V3)
-    if(MSVC)
-        set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} /arch:AVX2")
-    else()
-        set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -march=x86-64-v3")
-    endif()
-    list(APPEND argon2_sources opt.c)
-elseif(CMAKE_SYSTEM_PROCESSOR MATCHES "(x86_64|amd64|AMD64)")
-    # SSE2 version
-    list(APPEND argon2_sources opt.c)
+if(CMAKE_SYSTEM_PROCESSOR MATCHES "(x86_64|amd64|AMD64)")
+    list(APPEND argon2_src opt.c)
 else()
-    list(APPEND argon2_sources ref.c)
+    list(APPEND argon2_src ref.c)
 endif()
 
-list(TRANSFORM argon2_sources PREPEND "${CMAKE_SOURCE_DIR}/deps/argon2/")
-
-add_library(argon2 ${argon2_sources})
+list(TRANSFORM argon2_src PREPEND "${CMAKE_SOURCE_DIR}/dependencies/argon2/")
+add_library(argon2 ${argon2_src})
 target_include_directories(
     argon2
-    PRIVATE "${CMAKE_SOURCE_DIR}/deps/argon2/include"
+    PUBLIC "${CMAKE_SOURCE_DIR}/dependencies/argon2/include"
 )
 
+# libprogress
+add_library(progress "${CMAKE_SOURCE_DIR}/dependencies/libprogress/progress.c")
+target_include_directories(
+    progress
+    PUBLIC "${CMAKE_SOURCE_DIR}/dependencies/libprogress"
+)
+
+# getopt
 if(MSVC)
     add_library(getopt "${CMAKE_SOURCE_DIR}/deps/getopt/getopt.c")
-    target_include_directories(getopt PRIVATE "${CMAKE_SOURCE_DIR}/deps/getopt")
+    target_include_directories(getopt PUBLIC "${CMAKE_SOURCE_DIR}/deps/getopt")
 endif()
 
-ExternalProject_Add(
-    libressl_src
-    PREFIX "${CMAKE_BINARY_DIR}/deps/libressl"
-    URL
-        "https://github.com/libressl/portable/releases/download/v3.9.2/libressl-3.9.2.tar.gz"
-    PATCH_COMMAND
-        patch -p1 CMakeLists.txt
-        ${CMAKE_SOURCE_DIR}/patches/libressl-fix-mingw-asm.patch
-    BUILD_COMMAND ${CMAKE_MAKE_PROGRAM} crypto
-    CMAKE_ARGS
-        -DLIBRESSL_TESTS=off -DLIBRESSL_APPS=off
-        -DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE}
-        -DCMAKE_INTERPROCEDURAL_OPTIMIZATION=${CMAKE_INTERPROCEDURAL_OPTIMIZATION}
-        -DCMAKE_C_FLAGS=${CMAKE_C_FLAGS}
-        -DCMAKE_INSTALL_PREFIX=${CMAKE_BINARY_DIR}/deps/libressl-bin
-    DOWNLOAD_EXTRACT_TIMESTAMP true
-    UPDATE_DISCONNECTED true
-)
-
-ExternalProject_Add(
-    blake3_src
-    PREFIX "${CMAKE_BINARY_DIR}/deps/blake3"
-    SOURCE_DIR "${CMAKE_SOURCE_DIR}/deps/blake3"
-    BUILD_COMMAND ${CMAKE_MAKE_PROGRAM}
-    CMAKE_ARGS
-        -DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE}
-        -DCMAKE_INTERPROCEDURAL_OPTIMIZATION=${CMAKE_INTERPROCEDURAL_OPTIMIZATION}
-        -DCMAKE_INSTALL_PREFIX=${CMAKE_BINARY_DIR}/deps/blake3-bin
-    DOWNLOAD_EXTRACT_TIMESTAMP true
-    UPDATE_DISCONNECTED true
-)
-
+# fcrypt
 configure_file(
     "${CMAKE_SOURCE_DIR}/src/cmake-generated.h.in"
     "${CMAKE_BINARY_DIR}/generated/cmake-generated.h"
 )
-
-set(fcrypt_sources
+set(fcrypt_src
     main.c
     crypto-encrypt.c
     crypto-decrypt.c
@@ -120,52 +88,23 @@ set(fcrypt_sources
     key-derivation.c
     parse-args.c
 )
-list(TRANSFORM fcrypt_sources PREPEND "${CMAKE_SOURCE_DIR}/src/")
+list(TRANSFORM fcrypt_src PREPEND "${CMAKE_SOURCE_DIR}/src/")
+add_executable(fcrypt ${fcrypt_src})
 
-add_executable(fcrypt ${fcrypt_sources})
-add_dependencies(fcrypt libressl_src)
-add_dependencies(fcrypt blake3_src)
+target_compile_definitions(fcrypt PRIVATE CMAKE_COMPILING)
 
-target_compile_definitions(fcrypt PRIVATE CMAKE_COMPILING=1)
-
-target_include_directories(
-    fcrypt
-    PRIVATE "${CMAKE_SOURCE_DIR}/deps/argon2/include"
-)
-target_include_directories(
-    fcrypt
-    PRIVATE "${CMAKE_BINARY_DIR}/deps/libressl-bin/include"
-)
-target_include_directories(
-    fcrypt
-    PRIVATE "${CMAKE_BINARY_DIR}/deps/blake3-bin/include"
-)
 target_include_directories(fcrypt PRIVATE "${CMAKE_BINARY_DIR}/generated")
 
-target_link_directories(
-    fcrypt
-    PRIVATE "${CMAKE_BINARY_DIR}/deps/libressl-bin/lib"
-)
-target_link_directories(
-    fcrypt
-    PRIVATE "${CMAKE_BINARY_DIR}/deps/blake3-bin/lib"
-)
-
-target_link_libraries(fcrypt PRIVATE argon2)
-target_link_libraries(fcrypt PRIVATE blake3)
-target_link_libraries(fcrypt PRIVATE crypto)
-
-if(WIN32)
-    target_link_libraries(fcrypt PRIVATE ws2_32)
-    target_link_libraries(fcrypt PRIVATE ntdll)
-    target_link_libraries(fcrypt PRIVATE bcrypt)
-endif()
+target_link_libraries(fcrypt crypto)
+target_link_libraries(fcrypt blake3)
+target_link_libraries(fcrypt argon2)
+target_link_libraries(fcrypt progress)
 if(MSVC)
-    target_include_directories(fcrypt PRIVATE "${CMAKE_SOURCE_DIR}/deps/getopt")
-    target_link_libraries(fcrypt PRIVATE getopt)
+    target_link_libraries(fcrypt getopt)
 endif()
 
-add_executable(lua "${CMAKE_SOURCE_DIR}/deps/minilua/lua.c")
+# tests & install rules
+add_executable(lua "${CMAKE_SOURCE_DIR}/dependencies/minilua/lua.c")
 if(NOT WIN32)
     target_link_libraries(lua PRIVATE m)
 endif()

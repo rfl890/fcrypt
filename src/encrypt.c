@@ -10,6 +10,8 @@
 #include "common.h"
 #include "crypto.h"
 
+#include "progress.h"
+
 bool encrypt(FILE *input, FILE *output, char *password,
              enum cipher_algorithm algorithm) {
     char *magic;

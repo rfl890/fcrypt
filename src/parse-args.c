@@ -19,8 +19,7 @@ struct fcrypt_flags {
 
 const char *version_string = "fcrypt 1.1\n"
                              "git %s\n"
-                             "compiler: %s %s\n"
-                             "avx2 optimizations: %s\n";
+                             "compiler: %s %s\n";
 
 const char *usage_string =
     "usage: fcrypt --decrypt -chacha20 --password PASSWORD "
@@ -114,7 +113,7 @@ struct fcrypt_args parse_args(int argc, const char **argv) {
     } else if (flags.flg_version) {
 #ifdef CMAKE_COMPILING
         eprintf(version_string, GIT_COMMIT_HASH, COMPILER_STR,
-                COMPILER_VERSION_STR, BUILD_X86_64_V3 ? "yes" : "no");
+                COMPILER_VERSION_STR);
         exit(EXIT_SUCCESS);
 #endif
     }
