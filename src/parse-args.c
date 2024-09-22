@@ -17,7 +17,7 @@ struct fcrypt_flags {
     bool flg_version;
 };
 
-const char *version_string = "fcrypt 1.1\n"
+const char *version_string = "fcrypt %s\n"
                              "git %s\n"
                              "compiler: %s %s\n";
 
@@ -112,7 +112,7 @@ struct fcrypt_args parse_args(int argc, const char **argv) {
         exit(EXIT_SUCCESS);
     } else if (flags.flg_version) {
 #ifdef CMAKE_COMPILING
-        eprintf(version_string, GIT_COMMIT_HASH, COMPILER_STR,
+        eprintf(version_string, FCRYPT_VERSION, GIT_COMMIT_HASH, COMPILER_STR,
                 COMPILER_VERSION_STR);
         exit(EXIT_SUCCESS);
 #endif

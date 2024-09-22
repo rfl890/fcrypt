@@ -1,8 +1,20 @@
-cmake_minimum_required(VERSION 3.14)
-project(fcrypt VERSION 1.1 LANGUAGES C)
+cmake_minimum_required(VERSION 3.18)
+project(fcrypt VERSION 1.2 LANGUAGES C)
 include(FetchContent)
 include(FindGit)
 include(CTest)
+include(CheckLinkerFlag)
+
+# Check linker flag to change stack size
+check_linker_flag(C "LINKER:/STACK:4194304" STACK_SIZE_FLAG_VC_STYLE)
+check_linker_flag(C "LINKER:-z,stack-size=4194304" STACK_SIZE_FLAG_GNU_STYLE)
+check_linker_flag(C "LINKER:--stack,4194304" STACK_SIZE_FLAG_MINGW_STYLE)
+check_linker_flag(C "LINKER:-stack_size,4194304" STACK_SIZE_FLAG_MACOSX_STYLE)
+
+
+if (NOT (STACK_SIZE_FLAG_VC_STYLE OR STACK_SIZE_FLAG_GNU_STYLE OR STACK_SIZE_FLAG_MINGW_STYLE OR STACK_SIZE_FLAG_MACOSX_STYLE))
+    message(FATAL_ERROR "Failed to determine linker flag to set the stack size.")
+endif()
 
 # Get commit hash
 if(GIT_FOUND)
@@ -23,8 +35,7 @@ set(LIBRESSL_APPS off)
 FetchContent_Declare(
     libressl
     URL
-        # "https://github.com/libressl/portable/releases/download/v3.9.2/libressl-3.9.2.tar.gz"
-        "http://localhost:8080/libressl-3.9.2.tar.gz"
+        "https://github.com/libressl/portable/releases/download/v3.9.2/libressl-3.9.2.tar.gz"
         PATCH_COMMAND
         patch -p1 -i ${CMAKE_SOURCE_DIR}/patches/libressl-fix-mingw-asm.patch
     DOWNLOAD_EXTRACT_TIMESTAMP true
@@ -101,6 +112,17 @@ target_link_libraries(fcrypt argon2)
 target_link_libraries(fcrypt progress)
 if(MSVC)
     target_link_libraries(fcrypt getopt)
+endif()
+
+# set the stack size
+if(STACK_SIZE_FLAG_VC_STYLE)
+target_link_options(fcrypt PRIVATE "LINKER:/STACK:4194304")
+elseif(STACK_SIZE_FLAG_GNU_STYLE)
+target_link_options(fcrypt PRIVATE "LINKER:-z,stack-size=4194304")
+elseif(STACK_SIZE_FLAG_MINGW_STYLE)
+target_link_options(fcrypt PRIVATE "LINKER:--stack,4194304")
+else()
+target_link_options(fcrypt PRIVATE "LINKER:-stack_size,4194304")
 endif()
 
 # tests & install rules
