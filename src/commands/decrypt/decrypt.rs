@@ -9,6 +9,7 @@ use secrecy::{ExposeSecret, ExposeSecretMut, SecretBox, SecretString};
 use std::fs::File;
 use std::io::{Read, Seek, SeekFrom, Write};
 use std::path::PathBuf;
+use indicatif::{ProgressBar, ProgressStyle};
 
 type Aes256Ctr128LE = ctr::Ctr128LE<aes::Aes256>;
 
@@ -59,6 +60,11 @@ pub fn decrypt_command(args: &DecryptArgs) -> anyhow::Result<()> {
     let mut mac = Hasher::new_keyed(hmac_key.expose_secret());
     let mut cipher = Aes256Ctr128LE::new(encryption_key.expose_secret().into(), &iv.into());
 
+    // MAC
+    let bar_mac = ProgressBar::new(input_file_size as u64);
+    bar_mac.set_style(ProgressStyle::with_template("{msg} {bar:30} ({bytes}/{total_bytes})")?);
+    bar_mac.set_message("Verifying MAC...");
+
     let mut total_bytes_read = 0;
     loop {
         let bytes_read = input_file.read(input_buffer.expose_secret_mut())?;
@@ -69,16 +75,24 @@ pub fn decrypt_command(args: &DecryptArgs) -> anyhow::Result<()> {
         if total_bytes_read == input_file_size {
             let input_bytes = &input_buffer.expose_secret()[..bytes_read - 64];
             mac.update(input_bytes);
+            bar_mac.inc(bytes_read as u64);
             break;
         }
 
         mac.update(input_bytes);
+        bar_mac.inc(bytes_read as u64);
     }
     let mac = mac.finalize();
+    bar_mac.finish();
 
     if mac != read_mac {
         Err(anyhow!("MAC mismatch. This could indicate that the file has been tampered with, or that you used the wrong password."))?;
     }
+
+    // Decryption
+    let bar_dec = ProgressBar::new(input_file_size as u64);
+    bar_dec.set_style(ProgressStyle::with_template("{msg} {bar:30} ({bytes}/{total_bytes})")?);
+    bar_dec.set_message("Decrypting file...");
 
     input_file.rewind()?;
 
@@ -95,12 +109,16 @@ pub fn decrypt_command(args: &DecryptArgs) -> anyhow::Result<()> {
             let output_bytes = &mut output_buffer.expose_secret_mut()[..bytes_read - 64];
             cipher.apply_keystream_b2b(input_bytes, output_bytes)?;
             output_file.write_all(output_bytes)?;
+            bar_dec.inc(bytes_read as u64);
             break;
         }
 
         cipher.apply_keystream_b2b(input_bytes, output_bytes)?;
         output_file.write_all(output_bytes)?;
+        bar_dec.inc(bytes_read as u64);
     }
+
+    bar_dec.finish();
 
     Ok(())
 }

@@ -8,6 +8,7 @@ use secrecy::{ExposeSecret, ExposeSecretMut, SecretBox, SecretString};
 use std::fs::File;
 use std::io::{Read, Write};
 use std::path::PathBuf;
+use indicatif::{ProgressBar, ProgressStyle};
 
 type Aes256Ctr128LE = ctr::Ctr128LE<aes::Aes256>;
 
@@ -29,6 +30,8 @@ pub fn encrypt_command(args: &EncryptArgs) -> anyhow::Result<()> {
     let mut input_file = File::open(&args.file)?;
     let mut output_file = File::create(&args.output)?;
 
+    let input_file_size = input_file.metadata()?.len() as usize;
+
     // Derive keys
     let password = SecretString::from(prompt_password("Password: ")?);
     let (key, salt) = hash_password(&password, None);
@@ -41,6 +44,10 @@ pub fn encrypt_command(args: &EncryptArgs) -> anyhow::Result<()> {
     let iv = [0u8; 16];
 
     // Set up encryption and hashing
+    let bar = ProgressBar::new(input_file_size as u64);
+    bar.set_style(ProgressStyle::with_template("{msg} {bar:30} ({bytes}/{total_bytes})")?);
+    bar.set_message("Encrypting file...");
+
     let mut mac = Hasher::new_keyed(hmac_key.expose_secret());
     let mut cipher = Aes256Ctr128LE::new(encryption_key.expose_secret().into(), &iv.into());
 
@@ -55,11 +62,14 @@ pub fn encrypt_command(args: &EncryptArgs) -> anyhow::Result<()> {
         cipher.apply_keystream_b2b(input_bytes, output_bytes)?;
         mac.update(output_bytes);
         output_file.write_all(output_bytes)?;
+        bar.inc(bytes_read as u64);
     }
     let mac = mac.finalize();
 
     output_file.write_all(&salt)?;
     output_file.write_all(mac.as_bytes())?;
+
+    bar.finish();
 
     Ok(())
 }
