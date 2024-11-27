@@ -1,5 +1,5 @@
 use crate::util::pwdhash::hash_password;
-use crate::util::shared::{BLAKE3_CONTEXT_ENCRYPTION, BLAKE3_CONTEXT_HMAC, BUFFER_SIZE};
+use crate::util::shared::{BLAKE3_CONTEXT_ENCRYPTION, BLAKE3_CONTEXT_HMAC, BUFFER_SIZE, GLOBAL_PROGRESS_STYLE};
 use aes::cipher::{KeyIvInit, StreamCipher};
 use blake3::Hasher;
 use clap::Args;
@@ -7,6 +7,7 @@ use rpassword::prompt_password;
 use secrecy::{ExposeSecret, ExposeSecretMut, SecretBox, SecretString};
 use std::fs::File;
 use std::io::{Read, Write};
+use std::os::fd::FromRawFd;
 use std::path::PathBuf;
 use indicatif::{ProgressBar, ProgressStyle};
 
@@ -26,9 +27,20 @@ pub fn encrypt_command(args: &EncryptArgs) -> anyhow::Result<()> {
     let mut input_buffer = SecretBox::new(vec![0u8; BUFFER_SIZE].into_boxed_slice());
     let mut output_buffer = SecretBox::new(vec![0u8; BUFFER_SIZE].into_boxed_slice());
 
+    let input_filename = &args.file;
+    let output_filename = &args.output;
+
     // Open files
-    let mut input_file = File::open(&args.file)?;
-    let mut output_file = File::create(&args.output)?;
+    let mut input_file = if input_filename.display().to_string() == "-" {
+        unsafe { File::from_raw_fd(0) }
+    } else {
+        File::open(input_filename)?
+    };
+    let mut output_file = if output_filename.display().to_string() == "-" {
+        unsafe { File::from_raw_fd(1) }
+    } else {
+        File::create(output_filename)?
+    };
 
     let input_file_size = input_file.metadata()?.len() as usize;
 
@@ -45,7 +57,7 @@ pub fn encrypt_command(args: &EncryptArgs) -> anyhow::Result<()> {
 
     // Set up encryption and hashing
     let bar = ProgressBar::new(input_file_size as u64);
-    bar.set_style(ProgressStyle::with_template("{msg} {bar:30} ({bytes}/{total_bytes})")?);
+    bar.set_style(GLOBAL_PROGRESS_STYLE()?);
     bar.set_message("Encrypting file...");
 
     let mut mac = Hasher::new_keyed(hmac_key.expose_secret());

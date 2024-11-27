@@ -1,5 +1,5 @@
 use crate::util::pwdhash::hash_password;
-use crate::util::shared::{BLAKE3_CONTEXT_ENCRYPTION, BLAKE3_CONTEXT_HMAC, BUFFER_SIZE};
+use crate::util::shared::{BLAKE3_CONTEXT_ENCRYPTION, BLAKE3_CONTEXT_HMAC, BUFFER_SIZE, GLOBAL_PROGRESS_STYLE};
 use aes::cipher::{KeyIvInit, StreamCipher};
 use anyhow::anyhow;
 use blake3::{Hash, Hasher};
@@ -8,6 +8,7 @@ use rpassword::prompt_password;
 use secrecy::{ExposeSecret, ExposeSecretMut, SecretBox, SecretString};
 use std::fs::File;
 use std::io::{Read, Seek, SeekFrom, Write};
+use std::os::fd::FromRawFd;
 use std::path::PathBuf;
 use indicatif::{ProgressBar, ProgressStyle};
 
@@ -27,9 +28,20 @@ pub fn decrypt_command(args: &DecryptArgs) -> anyhow::Result<()> {
     let mut input_buffer = SecretBox::new(vec![0u8; BUFFER_SIZE].into_boxed_slice());
     let mut output_buffer = SecretBox::new(vec![0u8; BUFFER_SIZE].into_boxed_slice());
 
+    let input_filename = &args.file;
+    let output_filename = &args.output;
+
     // Open files
-    let mut input_file = File::open(&args.file)?;
-    let mut output_file = File::create(&args.output)?;
+    let mut input_file = if input_filename.display().to_string() == "-" {
+        unsafe { File::from_raw_fd(0) }
+    } else {
+        File::open(input_filename)?
+    };
+    let mut output_file = if output_filename.display().to_string() == "-" {
+        unsafe { File::from_raw_fd(1) }
+    } else {
+        File::create(output_filename)?
+    };
 
     let input_file_size = input_file.metadata()?.len() as usize;
 
@@ -62,7 +74,7 @@ pub fn decrypt_command(args: &DecryptArgs) -> anyhow::Result<()> {
 
     // MAC
     let bar_mac = ProgressBar::new(input_file_size as u64);
-    bar_mac.set_style(ProgressStyle::with_template("{msg} {bar:30} ({bytes}/{total_bytes})")?);
+    bar_mac.set_style(GLOBAL_PROGRESS_STYLE()?);
     bar_mac.set_message("Verifying MAC...");
 
     let mut total_bytes_read = 0;
@@ -91,7 +103,7 @@ pub fn decrypt_command(args: &DecryptArgs) -> anyhow::Result<()> {
 
     // Decryption
     let bar_dec = ProgressBar::new(input_file_size as u64);
-    bar_dec.set_style(ProgressStyle::with_template("{msg} {bar:30} ({bytes}/{total_bytes})")?);
+    bar_dec.set_style(GLOBAL_PROGRESS_STYLE()?);
     bar_dec.set_message("Decrypting file...");
 
     input_file.rewind()?;
