@@ -300,7 +300,6 @@ dependencies = [
  "rand",
  "rpassword",
  "secrecy",
- "zeroize",
 ]
 
 [[package]]

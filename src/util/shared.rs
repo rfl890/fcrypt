@@ -8,6 +8,6 @@ pub static BLAKE3_CONTEXT_HMAC: &str = "fcrypt v1.1 [hmac key]";
 // #define is dirty but simple, and would solve this problem
 // in a fraction of the cost
 pub const GLOBAL_PROGRESS_STYLE: fn() -> anyhow::Result<ProgressStyle> = || {
-    Ok(ProgressStyle::with_template("{msg} [{bar:30}] ({bytes}/{total_bytes})")?.progress_chars("=> "))
+    Ok(ProgressStyle::with_template("{msg} [{bar:30}] ({bytes}/{total_bytes}) [{bytes_per_sec}]")?.progress_chars("=> "))
 };
 pub const BUFFER_SIZE: usize = 1024 * 1024;
