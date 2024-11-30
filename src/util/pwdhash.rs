@@ -1,5 +1,5 @@
 use argon2::Algorithm::Argon2id;
-use argon2::Version::V0x13;
+use argon2::Version::{V0x10, V0x13};
 use argon2::{Argon2, Params};
 use rand::rngs::OsRng;
 use rand::RngCore;

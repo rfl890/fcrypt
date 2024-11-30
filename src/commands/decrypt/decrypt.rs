@@ -1,136 +1,28 @@
-use crate::util::pwdhash::hash_password;
-use crate::util::shared::{BLAKE3_CONTEXT_ENCRYPTION, BLAKE3_CONTEXT_HMAC, BUFFER_SIZE, GLOBAL_PROGRESS_STYLE};
-use aes::cipher::{KeyIvInit, StreamCipher};
-use anyhow::anyhow;
-use blake3::{Hash, Hasher};
-use clap::Args;
-use rpassword::prompt_password;
-use secrecy::{ExposeSecret, ExposeSecretMut, SecretBox, SecretString};
-use std::fs::File;
-use std::io::{Read, Seek, SeekFrom, Write};
-use std::os::fd::FromRawFd;
 use std::path::PathBuf;
-use indicatif::{ProgressBar, ProgressStyle};
-
-type Aes256Ctr128LE = ctr::Ctr128LE<aes::Aes256>;
+use clap::Args;
+use crate::v0_compat::decrypt::decrypt::decrypt_v0;
 
 #[derive(Args)]
 pub struct DecryptArgs {
+    /// Decrypt a file in V0 (legacy) format
+    #[arg(long)]
+    pub(crate) v0_compat: bool,
+
     /// File to decrypt
-    file: PathBuf,
+    pub(crate) file: PathBuf,
 
     /// Output file
-    output: PathBuf,
+    pub(crate) output: PathBuf,
+}
+
+pub fn decrypt(args: &DecryptArgs) -> anyhow::Result<()> {
+    println!("not implemented");
+    Ok(())
 }
 
 pub fn decrypt_command(args: &DecryptArgs) -> anyhow::Result<()> {
-    // Set up buffers
-    let mut input_buffer = SecretBox::new(vec![0u8; BUFFER_SIZE].into_boxed_slice());
-    let mut output_buffer = SecretBox::new(vec![0u8; BUFFER_SIZE].into_boxed_slice());
-
-    let input_filename = &args.file;
-    let output_filename = &args.output;
-
-    // Open files
-    let mut input_file = if input_filename.display().to_string() == "-" {
-        unsafe { File::from_raw_fd(0) }
-    } else {
-        File::open(input_filename)?
-    };
-    let mut output_file = if output_filename.display().to_string() == "-" {
-        unsafe { File::from_raw_fd(1) }
-    } else {
-        File::create(output_filename)?
-    };
-
-    let input_file_size = input_file.metadata()?.len() as usize;
-
-    // Extract MAC and salt
-    input_file.seek(SeekFrom::End(-64))?;
-    let mut salt = [0u8; 32];
-    let mut read_mac = [0u8; 32];
-
-    input_file.read(&mut salt)?;
-    input_file.read(&mut read_mac)?;
-
-    let read_mac = Hash::from_bytes(read_mac);
-
-    input_file.rewind()?;
-
-    // Derive keys
-    let password = SecretString::from(prompt_password("Password: ")?);
-    let (key, _) = hash_password(&password, Some(salt));
-
-    let encryption_key: SecretBox<[u8; 32]> =
-        SecretBox::init_with(|| blake3::derive_key(BLAKE3_CONTEXT_ENCRYPTION, key.expose_secret()));
-    let hmac_key: SecretBox<[u8; 32]> =
-        SecretBox::init_with(|| blake3::derive_key(BLAKE3_CONTEXT_HMAC, key.expose_secret()));
-
-    let iv = [0u8; 16];
-
-    // Set up encryption and hashing
-    let mut mac = Hasher::new_keyed(hmac_key.expose_secret());
-    let mut cipher = Aes256Ctr128LE::new(encryption_key.expose_secret().into(), &iv.into());
-
-    // MAC
-    let bar_mac = ProgressBar::new(input_file_size as u64);
-    bar_mac.set_style(GLOBAL_PROGRESS_STYLE()?);
-    bar_mac.set_message("Verifying MAC...");
-
-    let mut total_bytes_read = 0;
-    loop {
-        let bytes_read = input_file.read(input_buffer.expose_secret_mut())?;
-        total_bytes_read += bytes_read;
-
-        let input_bytes = &input_buffer.expose_secret()[..bytes_read];
-
-        if total_bytes_read == input_file_size {
-            let input_bytes = &input_buffer.expose_secret()[..bytes_read - 64];
-            mac.update(input_bytes);
-            bar_mac.inc(bytes_read as u64);
-            break;
-        }
-
-        mac.update(input_bytes);
-        bar_mac.inc(bytes_read as u64);
+    match args.v0_compat {
+        true => decrypt_v0(args),
+        false => decrypt(args),
     }
-    let mac = mac.finalize();
-    bar_mac.finish();
-
-    if mac != read_mac {
-        Err(anyhow!("MAC mismatch. This could indicate that the file has been tampered with, or that you used the wrong password."))?;
-    }
-
-    // Decryption
-    let bar_dec = ProgressBar::new(input_file_size as u64);
-    bar_dec.set_style(GLOBAL_PROGRESS_STYLE()?);
-    bar_dec.set_message("Decrypting file...");
-
-    input_file.rewind()?;
-
-    total_bytes_read = 0;
-    loop {
-        let bytes_read = input_file.read(input_buffer.expose_secret_mut())?;
-        total_bytes_read += bytes_read;
-
-        let input_bytes = &input_buffer.expose_secret()[..bytes_read];
-        let output_bytes = &mut output_buffer.expose_secret_mut()[..bytes_read];
-
-        if total_bytes_read == input_file_size {
-            let input_bytes = &input_buffer.expose_secret()[..bytes_read - 64];
-            let output_bytes = &mut output_buffer.expose_secret_mut()[..bytes_read - 64];
-            cipher.apply_keystream_b2b(input_bytes, output_bytes)?;
-            output_file.write_all(output_bytes)?;
-            bar_dec.inc(bytes_read as u64);
-            break;
-        }
-
-        cipher.apply_keystream_b2b(input_bytes, output_bytes)?;
-        output_file.write_all(output_bytes)?;
-        bar_dec.inc(bytes_read as u64);
-    }
-
-    bar_dec.finish();
-
-    Ok(())
 }

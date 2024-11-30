@@ -1,5 +1,6 @@
 mod commands;
 mod util;
+pub mod v0_compat;
 
 use crate::commands::decrypt::decrypt::{decrypt_command, DecryptArgs};
 use crate::commands::encrypt::encrypt::{encrypt_command, EncryptArgs};
